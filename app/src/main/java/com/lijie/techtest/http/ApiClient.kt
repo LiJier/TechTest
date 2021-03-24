@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Create by LiJie at 2021年03月24日
- * 网络请求，支持不同baseUrl
+ * 网络请求Client
  */
 object ApiClient {
 

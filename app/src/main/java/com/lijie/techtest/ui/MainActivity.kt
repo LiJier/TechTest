@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.amountDataList.observe(this, { res ->
             res.onSuccess {
                 Log.d("http", it.toString())
+                val yearAmountDataList = mainViewModel.getYearAmountData(it.orEmpty())
+                Log.d("http", yearAmountDataList.toString())
             }.onLoading {
                 Toast.makeText(this, getString(R.string.loading), Toast.LENGTH_SHORT).show()
             }.onError {

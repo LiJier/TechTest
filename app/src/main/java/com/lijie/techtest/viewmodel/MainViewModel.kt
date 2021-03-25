@@ -3,6 +3,7 @@ package com.lijie.techtest.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lijie.techtest.entity.AmountData
+import com.lijie.techtest.entity.YearAmountData
 import com.lijie.techtest.http.ResLiveData
 import com.lijie.techtest.repository.IMainRepository
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,28 @@ class MainViewModel(private val repository: IMainRepository) : ViewModel() {
         launch(amountDataList) {
             repository.getAmountData(limit, offset)
         }
+    }
+
+    /**
+     * 获取按年分组数据
+     */
+    fun getYearAmountData(amountDataList: List<AmountData>): List<YearAmountData> {
+        val yearAmountDataMap = HashMap<Int, List<AmountData>>()
+        amountDataList.forEach {
+            val year = it.quarter?.split("-")?.getOrElse(0) { "2008" }.toString().toInt()
+            val dataList = if (yearAmountDataMap.containsKey(year)) {
+                yearAmountDataMap[year] as ArrayList
+            } else {
+                arrayListOf()
+            }
+            dataList.add(it)
+            yearAmountDataMap[year] = dataList
+        }
+        val yearAmountDataList = arrayListOf<YearAmountData>()
+        yearAmountDataMap.entries.forEach {
+            yearAmountDataList.add(YearAmountData(it.key, it.value))
+        }
+        return yearAmountDataList
     }
 
     //使用协程获取数据,并通过LiveData发送

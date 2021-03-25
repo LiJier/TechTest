@@ -33,7 +33,7 @@ class MainViewModel(private val repository: IMainRepository) : ViewModel() {
     }
 
     /**
-     * 获取按年分组数据
+     * 获取按年分组数据，并找出有季度数据量下降的年份
      */
     fun getYearAmountData(amountDataList: List<AmountData>): List<YearAmountData> {
         val yearAmountDataMap = HashMap<Int, List<AmountData>>()
@@ -48,10 +48,26 @@ class MainViewModel(private val repository: IMainRepository) : ViewModel() {
             yearAmountDataMap[year] = dataList
         }
         val yearAmountDataList = arrayListOf<YearAmountData>()
-        yearAmountDataMap.entries.forEach {
-            yearAmountDataList.add(YearAmountData(it.key, it.value))
+        yearAmountDataMap.entries.forEach { mutableEntry ->
+            val dataList = mutableEntry.value
+            dataList.sortedBy {
+                it.quarter
+            }
+            var hasDecline = false
+            dataList.forEachIndexed { index, amountData ->
+                if (index < dataList.size - 1) {
+                    val next = dataList[index + 1]
+                    if (next.volumeOfMobileData < amountData.volumeOfMobileData) {
+                        hasDecline = true
+                        return@forEachIndexed
+                    }
+                }
+            }
+            yearAmountDataList.add(YearAmountData(mutableEntry.key, dataList, hasDecline))
         }
-        return yearAmountDataList
+        return yearAmountDataList.sortedBy {
+            it.year
+        }
     }
 
     //使用协程获取数据,并通过LiveData发送

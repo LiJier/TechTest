@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         //初始化设置一个空的adapter，以便加载失败时可以使用下拉刷新
         viewBinding.amountRecyclerView.adapter = adapter
         ApiClient.init("https://data.gov.sg/api/")
-        mainViewModel.amountDataList.observe(this, { res ->
+        mainViewModel.amountDataListLiveData.observe(this, { res ->
             res.onSuccess {
                 viewBinding.refreshLayout.finishRefresh()
                 val yearAmountDataList = mainViewModel.getYearAmountData(it.orEmpty())
@@ -63,7 +63,10 @@ class MainActivity : AppCompatActivity() {
             }.onLoading {
             }.onError {
                 viewBinding.refreshLayout.finishRefresh()
-                Toast.makeText(this, it?.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "发生异常${it?.message},使用本地缓存", Toast.LENGTH_SHORT).show()
+                val yearAmountDataList = mainViewModel.getYearAmountData(mainViewModel.getCache())
+                adapter.amountDataList = yearAmountDataList
+                adapter.notifyDataSetChanged()
             }
         })
         viewBinding.refreshLayout.setOnRefreshListener {

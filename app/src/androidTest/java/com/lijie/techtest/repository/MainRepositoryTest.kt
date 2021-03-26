@@ -18,7 +18,7 @@ class MainRepositoryTest {
 
     @Test
     fun getAmountData() = runBlocking(TestCoroutineDispatcher()) {
-        val amountData = MainRepository.getAmountData(44, 14)
-        TestCase.assertEquals(44, amountData?.size)
+        val amountDataList = MainRepository.getAmountData(44, 14)
+        TestCase.assertEquals(44, amountDataList?.size)
     }
 }

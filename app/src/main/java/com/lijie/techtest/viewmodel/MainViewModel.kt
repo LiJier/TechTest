@@ -1,22 +1,30 @@
 package com.lijie.techtest.viewmodel
 
+import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.lijie.techtest.MyApp
 import com.lijie.techtest.entity.AmountData
 import com.lijie.techtest.entity.YearAmountData
 import com.lijie.techtest.http.ResLiveData
 import com.lijie.techtest.repository.IMainRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 /**
  * ViewModel层，负责业务逻辑，数据传递
  */
 class MainViewModel(private val repository: IMainRepository) : ViewModel() {
 
-    val amountDataList by lazy {
+    private val sp by lazy {
+        MyApp.appContext.getSharedPreferences("cache", Context.MODE_PRIVATE)
+    }
+    private val gson by lazy {
+        Gson()
+    }
+    val amountDataListLiveData by lazy {
         ResLiveData<List<AmountData>>()
     }
 
@@ -26,9 +34,14 @@ class MainViewModel(private val repository: IMainRepository) : ViewModel() {
     fun getAmountData(
         limit: Int = 44,
         offset: Int = 14
-    ) {
-        launch(amountDataList) {
-            repository.getAmountData(limit, offset)
+    ): Job {
+        return launch(amountDataListLiveData) {
+            repository.getAmountData(limit, offset).also {
+                //成功后缓存数据到本地
+                sp.edit {
+                    putString("getAmountData:limit$limit&offset$offset", gson.toJson(it.orEmpty()))
+                }
+            }
         }
     }
 
@@ -70,12 +83,23 @@ class MainViewModel(private val repository: IMainRepository) : ViewModel() {
         }
     }
 
+    /**
+     * 获取本地缓存
+     */
+    fun getCache(
+        limit: Int = 44,
+        offset: Int = 14
+    ): List<AmountData> {
+        val jsonString = sp.getString("getAmountData:limit$limit&offset$offset", "")
+        return gson.fromJson(jsonString, object : TypeToken<List<AmountData>>() {}.type)
+    }
+
     //使用协程获取数据,并通过LiveData发送
     private inline fun <T> launch(
         resLiveData: ResLiveData<T>? = null,
         crossinline block: suspend () -> T?
-    ) {
-        viewModelScope.launch {
+    ): Job {
+        return viewModelScope.launch {
             try {
                 withContext(Dispatchers.Main) {
                     resLiveData?.loading(resLiveData.progress)
